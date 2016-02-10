@@ -1,0 +1,29 @@
+#!/bin/bash
+
+tput setaf 6
+echo "+++ ev3 Compiler +++"
+echo ""
+
+for cfile in "$@"
+do
+	echo "+ Compiling: $cfile -> $cfile.o"
+	tput setaf 3
+	cc -g -I. -I/usr/local/bin/sources/ -o $(basename "$cfile").o -c $cfile -lpthread
+	tput setaf 6
+done
+
+echo "+ Linking to: $1.out"
+tput setaf 3
+cc /usr/local/bin/objects/* ./*.o -o $1.out -lm -lpthread -lbluetooth
+tput setaf 6
+
+echo "+ Removing object files"
+tput setaf 3
+for cfile in "$@"
+do
+	rm $(basename "$cfile").o
+done
+tput setaf 6
+
+echo "+ Done"
+tput setaf 7

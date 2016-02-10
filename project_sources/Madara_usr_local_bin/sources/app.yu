@@ -1,0 +1,44 @@
+($!
+     ____ __     ____   ___    ____ __         (((((()
+    | |_  \ \  /   ) ) | |  ) | |_  \ \  /  \(@)- /
+    |_|__  \_\/  __)_) |_|_/  |_|__  \_\/   /(@)- \
+                                               ((())))
+
+($set LIBRARY ]
+ev3dev-c
+[ )
+($set VERSION ]
+0.8b2
+[ )
+($set KERNEL ]
+3.16.7-ckt19-8-ev3dev-ev3
+[ )
+($set DESCRIPTION ]
+LEGO Mindstorms EV3 Debian C library + Python, Ruby and Perl wrappers
+[ )
+($set AUTHOR ]
+Vitaly Kravtsov
+[ )
+($set AUTHOR_EMAIL ]
+in4lio@gmail.com
+[ )
+($set LICENSE ]
+See the LICENSE file.
+[ )
+($set URL ]
+https://github.com/in4lio/ev3dev-c
+[ )
+($set COMPILER ]
+gcc
+[ )
+
+($macro TITLE (brief)($__TITLE__)/**
+ *  \file  ($unq ($__OUTPUT_FILE__)) (($unq ($__FILE__)))
+ *  \brief  ($brief)
+ *  \author  ($AUTHOR) (($AUTHOR_EMAIL))
+ *  \copyright  ($LICENSE)
+ */
+)
+
+($set EOL,,
+)

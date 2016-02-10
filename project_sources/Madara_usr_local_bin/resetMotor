@@ -1,0 +1,9 @@
+#!/bin/bash
+echo Motor reset...
+
+for dir in $(find /sys/class/tacho-motor/ -mindepth 1 -maxdepth 1)
+do
+ echo reset > $dir/command
+done
+
+echo Done

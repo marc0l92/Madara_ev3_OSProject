@@ -1,38 +1,13 @@
-<div id="content" class="mw-body" role="main"><a id="top"></a>
-
 # Snake Game - Màdara
 
-<div id="bodyContent" class="mw-body-content">
+![](index_files/300px-Final1.jpg)
 
-<div id="siteSub">From Robot Project</div>
+Màdara final version
 
-<div id="jump-to-nav" class="mw-jump">Jump to: [navigation](#mw-head), [search](#p-search)</div>
-
-<div id="mw-content-text" dir="ltr" class="mw-content-ltr" lang="en">
-
-<div class="thumb tright">
-
-<div class="thumbinner" style="width:302px;">[![](index_files/300px-Final1.jpg)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Final1.jpg)
-
-<div class="thumbcaption">
-
-<div class="magnify">[](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Final1.jpg "Enlarge")</div>
-
-Màdara final version</div>
-
-</div>
-
-</div>
 
 **Màdara** is a robot designed for the Snake Game Competition organized as a project for the Operating Systems course at Eurecom. Refer to the official website at this [link](http://soc.eurecom.fr/OS/projects_fall2015.html) for the complete set of specifications.
 
-<div id="toc" class="toc">
-
-<div id="toctitle">
-
 ## Contents
-
-<span class="toctoggle"> [[hide](#)] </span></div>
 
 *   [<span class="tocnumber">1</span> <span class="toctext">Specifications summary</span>](#Specifications_summary)
 *   [<span class="tocnumber">2</span> <span class="toctext">Robot architecture</span>](#Robot_architecture)
@@ -77,9 +52,8 @@ Màdara final version</div>
 *   [<span class="tocnumber">7</span> <span class="toctext">Work division</span>](#Work_division)
 *   [<span class="tocnumber">8</span> <span class="toctext">Team members</span>](#Team_members)
 
-</div>
 
-### <span class="mw-headline" id="Specifications_summary">Specifications summary</span>
+### Specifications summary
 
 A square arena contains some balls at predefined positions. A snake made of several robots communicating through a bluetooth server navigates in the arena led by the first robot. As soon as the first robot finds and grabs a ball, it comes back to the starting position and it passes the leadership to the following one. The robot has thus to cover two roles:
 
@@ -88,19 +62,13 @@ A square arena contains some balls at predefined positions. A snake made of seve
 
 # <span class="mw-headline" id="Robot_architecture">Robot architecture</span>
 
-<div class="thumb tright">
 
-<div class="thumbinner" style="width:302px;">[![](index_files/300px-Building1.jpg)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Building1.jpg)
+![](index_files/300px-Building1.jpg)
 
-<div class="thumbcaption">
 
-<div class="magnify">[](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Building1.jpg "Enlarge")</div>
 
-Building the robot</div>
+Building the robot
 
-</div>
-
-</div>
 
 The choice of the robot architecture is a fundamental step in the design. The avalilable components are three motors with integrated encoders, an ultrasonic sensor, a compass, a gyroscope and a color sensor. A careful analysis of the specifications is necessary. First of all the basic functions that the robot must perform should be identified.
 
@@ -165,25 +133,13 @@ In each of the following functions the robot knows its position (x,y,t) in the p
 
 If the robot is in a given postition x,y and wants to reach a destination X,Y it must compute the angle and distance that it has to cover according to these simple relations:
 
-[![Polar.png](index_files/Polar.png)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/Polar.png)
+![Polar.png](index_files/Polar.png)
 
 Usually the position is updated on the basis of the target one since this gives the best accuracy. However if the robot stops in the middle of a movement due to an obstacle or cancel message, the actual distance is measured with the encoders.
 
-### <span class="mw-headline" id="Motor_control">Motor control</span>
+### Motor control
 
-<div class="thumb tright">
-
-<div class="thumbinner" style="width:302px;">[![](index_files/300px-Motor_controller.png)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Motor_controller.png)
-
-<div class="thumbcaption">
-
-<div class="magnify">[](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Motor_controller.png "Enlarge")</div>
-
-PID</div>
-
-</div>
-
-</div>
+![](index_files/300px-Motor_controller.png)
 
 Some predefined controllers available in the library that exploit the encoders can be used. As far as the arm is concerned a predefided function that makes the motor turn of an absolute angle is used. Each time the robot is turned on with the arm down this angle becomes the zero reference for the encoder control. The grab position can be reached turning of a precomputed absolute angle. When the arm reaches one of the positions, a [PID controller](https://en.wikipedia.org/wiki/PID_controller) is started in order to keep that position. Two functions called grab_and_check and drop_the_ball are incluede in the lib/ev3lib_ball library. They are blocking. To go straight for a certain distance at a certain speed one PID controller for each motor is started giving a reference speed (computed with a simple mapping from speed in cm/s to tachocounts/s). The motors stop after having turned for a given number of counts, computed with a simple mapping between cm and counts (considering the diameter of the wheels). When the final position is reached, a PID controller is set to keep it. If the speed to reach is quite high, a step command is not suitable. In fact it makes the wheel slip on the floor loosing precision. For this reason the possibility of using ramp commands is included. A run_relative(cm) function is included in the lib/ev3lib_motor library. It is a non-blocking function. A flag must be checked to see when it finishes. This allows to poll/check also other conditions. For instance it is possible to look for the presence of an obstacle while running. This function is properly called by higher-level ones and never directly in the main application. To turn of a given angle the two motors are given a command to turn of a relative angle simply computed taking into account the wheel diameter and the distance between them. Again a PID is started to keep the final position. A turn_relative(angle) function is included in the lib/ev3lib_motor library. Encoders do not provide a good accuracy for this turn. This function is never called directly in the main application, but it is called by higher-level functions that also handle gyroscope and compass values.
 
@@ -242,21 +198,9 @@ To run forward of a given distance at a given speed the proper command is given 
 
 Avoid obstacle is a function that implements the strategy described in the avoid obstacle section.
 
-### <span class="mw-headline" id="Blueetooth_module">Blueetooth module</span>
+### Blueetooth module
 
-<div class="thumb tright">
-
-<div class="thumbinner" style="width:302px;">[![](index_files/300px-Bluetooth_graph.png)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Bluetooth_graph.png)
-
-<div class="thumbcaption">
-
-<div class="magnify">[](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Bluetooth_graph.png "Enlarge")</div>
-
-Bluetooth</div>
-
-</div>
-
-</div>
+![](index_files/300px-Bluetooth_graph.png)
 
 The bluetooth communication is handled as shown in the picture. Everything is managed inside library. The init function creates a socket and then spawns a thread. This thread executes a blocking read on the input buffer, whenever a message is available it calls the correspondig callback function that was registered during initialization. These callbacks can be used to execute operations driven by the message events. It is important to notice that when a callback is being executed the socket buffers incoming messages that are therefore not lost, however the scheduler that reads from the buffer and schedules callback is blocked. This means that the next message will be served only after the completion of the previous callback. It is thus necessary to write very short callbacks, for instance just to set variables in order to synchronize operations in the main application. Send functions with the message name can be invoked from the main application to send messages to the output buffer whenever required.
 
@@ -272,32 +216,33 @@ The functionality implemented by the robot is very complex and can be easily mod
 
 #### <span class="mw-headline" id="I_am_me">I am me</span>
 
-[![Overall behavior](index_files/500px-IamMe.png)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/500px-IamMe.png "Overall behavior")
+![Overall behavior](index_files/500px-IamMe.png)
 
 #### <span class="mw-headline" id="Leader">Leader</span>
 
 The main strategy used by the leader is described in the following.
 The robot first reads a file of predefined positions to reach and it follows the path (even several times) until a ball is found. Since a ball is likely to be present in each predefined position, the success is very probable. Thanks to the object detection feature, if a ball is found in an area around this path, it is detected and grabbed. Since the path is properly designed to cover most of the arena, also balls at random positions (or moved from predefined positions) can be grabbed.
 Tests show how efficient this algorithm is in several conditions. See the video section for several cases.
-[![Leader](index_files/500px-Leader.png)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/500px-Leader.png "Leader")
+![Leader](index_files/500px-Leader.png)
 
 #### <span class="mw-headline" id="Follower">Follower</span>
 
 The most important part of the follower algorith is the choice of the position where to go based on the action (or cancel) message received. The distance to keep from the other robot is 40 cm (center to center). In case the preceding robot moves of a distance greater than 40 cm, the robot first reaches the past position of the preceding one, than it moves towards its new position (computed thanks to the action message), but it stops 40 cm before (thanks to the margin paramenter in the go_to function). If the distance is less than 40 cm this algorithm does not work. For this reason the robot first aligns itself on the line that links its position to the new position of the preceding robot. Then it moves forward or backward in order to keep a 40 cm distance from the new position.
 After having received an action message the robot waits some time before starting to move and the motion itself takes time (especially to turn). If a cancel message is received, the robot stops, but at this time it is not necessary at 40 cm from the preceding due to the differences in the beginning of the movement. So an **additional feature** of the cancel message is exploited to resychronize: if the robot that sends the cancel implements the distance field, this piece of information is exploited to compute where it actually stopped and complete the 'follow action' using that target instead of just aborting the movement. Madara also implements this distance feature when it has to send a cancel message.
 This algorithm proved to be very efficient during tests with team Wall_EV3.
-[![Follower](index_files/500px-Follower.png)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/500px-Follower.png "Follower")
+![Follower](index_files/500px-Follower.png)
 
-#### <span class="mw-headline" id="Go_back_home">Go back home</span>
+#### Go back home
 
 The main strategy to go back to the starting position is just to use the go_to function, exploiting its object avoidance features in case other obstacles are in the middle.
-[![go_back_home](index_files/500px-Go_back_home.png)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/500px-Go_back_home.png "go_back_home")
 
-#### <span class="mw-headline" id="Get_the_ball">Get the ball</span>
+![go_back_home](index_files/500px-Go_back_home.png)
+
+#### Get the ball
 
 Here a flow chart is the better approach to explain functionality also described in the basic functionality section.
-[![get ball](index_files/500px-Get_ball.png)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/500px-Get_ball.png "get ball")
-[![scann ball](index_files/500px-Scann_ball.png)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/500px-Scann_ball.png "scann ball")
+![get ball](index_files/500px-Get_ball.png)
+![scann ball](index_files/500px-Scann_ball.png)
 
 # <span class="mw-headline" id="Videos">Videos</span>
 
@@ -395,28 +340,16 @@ Otherwise, if you want to compile another program that uses the library written 
 
 This method does not work so well when you have to remove the battery due to a system crash, in fact after this operation the internal clock is reset and the make file generates an error called "Clock skew detected". In order to solve this problem you simply have to recompile the whole project.
 
-## <span class="mw-headline" id="Download_and_run_the_project">Download and run the project</span>
+## Download and run the project
 
-<div class="thumb tright">
-
-<div class="thumbinner" style="width:302px;">[![](index_files/300px-Wifi_module.jpg)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Wifi_module.jpg)
-
-<div class="thumbcaption">
-
-<div class="magnify">[](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Wifi_module.jpg "Enlarge")</div>
-
-Wifi module</div>
-
-</div>
-
-</div>
+![](index_files/300px-Wifi_module.jpg)
 
 After one has connected the laptop on the same Wi-fi network of the robot, it is possible to load the source code on the robot using the _scp_ command.
 
 It is possible to download the source code from the following links:
 
-*   [link](http://studwww.eurecom.fr/~lucarell/os_project/project_sources/Madara_home.zip) : this compressed file have to be extracted in the home folder
-*   [link](http://studwww.eurecom.fr/~lucarell/os_project/project_sources/Madara_usr_local_bin.zip) : this compressed file have to be extracted in the usr/local/bin folder
+*   [link](project_sources/Madara_home.zip) : this compressed file have to be extracted in the home folder
+*   [link](project_sources/Madara_usr_local_bin.zip) : this compressed file have to be extracted in the usr/local/bin folder
 
 Before compiling the project one has to set the bluetooth address of the server by editing the define SERVER_ADDRESS inside the file lib/ev3lib_bluetooth.h
 

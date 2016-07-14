@@ -143,29 +143,17 @@ Usually the position is updated on the basis of the target one since this gives 
 
 Some predefined controllers available in the library that exploit the encoders can be used. As far as the arm is concerned a predefided function that makes the motor turn of an absolute angle is used. Each time the robot is turned on with the arm down this angle becomes the zero reference for the encoder control. The grab position can be reached turning of a precomputed absolute angle. When the arm reaches one of the positions, a [PID controller](https://en.wikipedia.org/wiki/PID_controller) is started in order to keep that position. Two functions called grab_and_check and drop_the_ball are incluede in the lib/ev3lib_ball library. They are blocking. To go straight for a certain distance at a certain speed one PID controller for each motor is started giving a reference speed (computed with a simple mapping from speed in cm/s to tachocounts/s). The motors stop after having turned for a given number of counts, computed with a simple mapping between cm and counts (considering the diameter of the wheels). When the final position is reached, a PID controller is set to keep it. If the speed to reach is quite high, a step command is not suitable. In fact it makes the wheel slip on the floor loosing precision. For this reason the possibility of using ramp commands is included. A run_relative(cm) function is included in the lib/ev3lib_motor library. It is a non-blocking function. A flag must be checked to see when it finishes. This allows to poll/check also other conditions. For instance it is possible to look for the presence of an obstacle while running. This function is properly called by higher-level ones and never directly in the main application. To turn of a given angle the two motors are given a command to turn of a relative angle simply computed taking into account the wheel diameter and the distance between them. Again a PID is started to keep the final position. A turn_relative(angle) function is included in the lib/ev3lib_motor library. Encoders do not provide a good accuracy for this turn. This function is never called directly in the main application, but it is called by higher-level functions that also handle gyroscope and compass values.
 
-### <span class="mw-headline" id="Gyroscope_calibration_and_reading">Gyroscope calibration and reading</span>
+### Gyroscope calibration and reading
 
 The device is able to integrate its measurements to compute an absolute angle that can be read. At initialization the zero position is calibrated so that each value is given in the chosen reference system.
 
-### <span class="mw-headline" id="Compass_calibration_and_reading">Compass calibration and reading</span>
+### Compass calibration and reading
 
 The compass provides an absolute measurement of the angle w.r.t. to the north. Since the distances inside the arenas are quite short, this value is condidered to be constant. The values read from the compass are quite stable and don't reaquire any additional filtering. However the magnetic field is strongly influenced by external sources, so the values change in different positions of the arena. Moreover in a given position the results are not linear. To solve this problem multiple calibrations can be performed. A simple goniometer is used as reference to calibrate 8 angle values in 4 different positions of the arena. These 32 values are stored into a file that is loaded into memory at run time. Given a certain angle it is possible to retrieve the corresponding measurement value of the nearest calibrated angle. The choice of the calibration point is based on the x,y position in the arena, selecting the nearest one. This mechanism is exploited by the function responsible for absolute turns. The main goal is to have in each position a good absolute angular reference. This solves the drift problem from which the gyroscope is affected. It is possible to reach a calibration angle known with high accuracy and then turn relatively of a small angle exploiting the gyroscope that does not suffer from drift if the time between two measurements is small. The encoders as well are good for small turns starting from a known position. As for the gyroscope the zero position is calibrated at the beginning by saving the arena heading and then subrating it from each reading. The calibration functions are part of the library lib/ev3lib_motor_controller. The program **calibration** calls it providing a nice user-friendly interface for calibrating the compass in one position and saving the points to file. A complete file for all positions can be then easily created editing the different files created even independently. It is very important to calibrate the compass before each competetion, especially if the position of the arena changes. This feature allows great accuracy in the movements, however it is also very critical for the performace and must be performed with much care.
 
-### <span class="mw-headline" id="Controller_based_on_encoders.2C_gyroscope_and_compass">Controller based on encoders, gyroscope and compass</span>
+### Controller based on encoders, gyroscope and compass
 
-<div class="thumb tright">
-
-<div class="thumbinner" style="width:302px;">[![](index_files/300px-Controller.png)](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Controller.png)
-
-<div class="thumbcaption">
-
-<div class="magnify">[](http://studwww.eurecom.fr/~lucarell/os_project/index_files/300px-Controller.png "Enlarge")</div>
-
-controller</div>
-
-</div>
-
-</div>
+![](index_files/300px-Controller.png)
 
 The best approch is to build a filter between the angle values that can be retrieved from the encoders, the gyroscope and the compass. For instance a Karman filter. This allows to compute a value of the current angle with low uncertainty and then build a controller based on this measure for the feedback. Due to the complexity of this filter and since the focus of the course is Operating Systems and not control theory, measurements and odometry, this approach is discarded and a more naive, though effective one is chosen. The main idea is to exploit the PID controllers based on the encoders to handle the dynamic behaviour of the system in a nice way and on top of it use the values of the gyroscope and compass to increase the accuracy. In other words the turn relative function based on the PID can be used to turn of a given angle and the PID is able to handle the dynamic behaviour of the robot providing a smooth response. A proportional controller computes the error between target and current angle using the gyroscope and then gives the command (divided by a constant of 4) to the turn relative function. Since the internal meachanism already handles the dynamic behavior, the proportional controller is sufficient it is a way to use the gyroscope better precision. This is the turn relative function included in the lib/ev3lib_motor library. On top of it, similary, a turn absolute function is built. It used a proportional controller and the calibrated compass values as well as the compass reading to reach the calibrated angle nearest to the reference one. The it calls the simple turn relative to make the remaining movement. This way the even better accuracy of the calibrated angles is exploited. In the end the result is very good and it does not drifts during the competition. The video section shows how the robot can turn perfectly of a given angle. Figure _contoller_ shows a diagram of the overall system. Follows the pseudocode of a proportional controller that once the final position is reached exits.
 
@@ -176,15 +164,15 @@ The best approch is to build a filter between the angle values that can be retri
 
 Even if the proportional controller exits, sice the command is given to the PID controller, the final position is kept in hold.
 
-### <span class="mw-headline" id="Ball_detection_and_grab_with_check">Ball detection and grab with check</span>
+### Ball detection and grab with check
 
 This basic function is called whenever the robot reaches a position where he thinks there is a ball, either because he reached a predefined position or because he encountered something during his movements. The main idea is to perform a scan in two directions trying to identify the angle at which the minimum distance from the object is found. To avoid considering walls as balls, a limit on the distance is set. If the distance is greater than this limit it is considered as infinity. Since the robot never goes near the wall at a distance smaller than the limit, the wall is never considered in the minimum computation even if it seen by the sensor. This procedure is repeated several times, after each scan the robot tunrs to the position of the minimum and then approaches the ball running for 3/4 of the distance from it and then scans again. If during the following scan the minimum is not found, the robot tries a second time before saying the ball is not there. Once the distance from the ball is less than a certain limit the robot tries to grab it and then checks the color sensor to see if the grab was successful. In case of failure it tries againg to scan and grab twice before saying the ball was not found. This strategy is very slow but really effective since the successive approximations allow the robot to grab the ball even if it was not really aligned to it when it stopped the first time and even if some errors occur due to imprecisions during the scans or if the ball is lost during grab.
 
-### <span class="mw-headline" id="Obstacle_detection_and_avoidance">Obstacle detection and avoidance</span>
+### Obstacle detection and avoidance
 
 To detect obstacles it is simply sufficient to check the distance values of the ultrasonic sensor while running. A limit is set that allows the robot to stop before touching it. In case the obstacle is after the final destination point movement can be completed. Otherwise some action is perfomed based on the main strategy described in the following sections. The distance covered before the abort due to the obstacle is measured thanks to the encoders. After an obstacle is found the action to take depends on the main strategy described in the following secions. In case it is necessary to avoid the obstacle an obstacle avoid function is called. This simply decides to turn left or right of 45 degrees depending on the robot position and angle in the arena. Then it makes the robot run for 40 cm. This decision is made thanks to a look-up in a 3D matrix of hardwired values wich takes as input i,j,k where i is 1 if the robot is in the right part of the arena, y if it is in the top part, and k can take values from 0 to 3 according to the quadrant in which the robot angle is.
 
-### <span class="mw-headline" id="Go_to_position">Go to position</span>
+### Go to position
 
 To run forward of a given distance at a given speed the proper command is given to the motors using set_motors_speed and run_relative with a proper mapping between distance and angles. Once the command is given, the motors and sensors act as devices in parallel with the main application. The main application polls the status flag in the motors to see when the movement is completed. This basic functionality can be improved also checking the value of the distance given by the ultrasonic sensor (to detect an obstacle) and the value of the flag that indicates the reception of a cancel message. The basic go to position function exits whenever the final position is reached or a cancel message is received or an obstacle is found and returns this status (as well as updating the robot posistion). Actually, to be more precise, when an object is detected, if its position is after the final destination the movement is re-started and completed and the final exit value is reached. This function also allows to specify a margin to use when reaching the final destination. For instace it is possible to reach a position 40 cm before the position of the next robot given as input. If a movement is bigger than 200 cm it is split in several 200cm ones plus the remainder, in order to avoid sending distance messages bigger than 255cm and also to re-calibrate the angle at each step. This function can be used as it is, for instance in the leader where the only exit conditions are reached and obstacle and in both cases the action to take is to try to grab a ball. This function is then used by a more complex one that implements (if set as parameter) obstacle avoidance. Follows the pseudo code in a very simplified form:
 
@@ -204,32 +192,34 @@ Avoid obstacle is a function that implements the strategy described in the avoid
 
 The bluetooth communication is handled as shown in the picture. Everything is managed inside library. The init function creates a socket and then spawns a thread. This thread executes a blocking read on the input buffer, whenever a message is available it calls the correspondig callback function that was registered during initialization. These callbacks can be used to execute operations driven by the message events. It is important to notice that when a callback is being executed the socket buffers incoming messages that are therefore not lost, however the scheduler that reads from the buffer and schedules callback is blocked. This means that the next message will be served only after the completion of the previous callback. It is thus necessary to write very short callbacks, for instance just to set variables in order to synchronize operations in the main application. Send functions with the message name can be invoked from the main application to send messages to the output buffer whenever required.
 
-## <span class="mw-headline" id="Complex_functionality">Complex functionality</span>
+## Complex functionality
 
-### <span class="mw-headline" id="Main_architecture">Main architecture</span>
+### Main architecture
 
 The program is basically composed by two parts. The first one is the bluetooth thread that acts as scheduler for the message callbacks. The second one is the main that acts a scheduler for the follower, leader and go_back_home functions. The main and the bluetooth threads synchonize thanks to the callbacks that set/unset lock variables. For instance the main waits polling a flag that is set by a callback. This busy-wainting approach is not the best one at all since the waiting thread has to be continuously scheduled to perform the check. It would be better to use a mutex and a condition variable or a semaphore to make the waiting thread sleep while the flag is not set. Moreover the robot has to interpret the sensors to interpret them as events, like obstacle detection.
 
-### <span class="mw-headline" id="FSM_description_of_the_overall_behavior">FSM description of the overall behavior</span>
+### FSM description of the overall behavior
 
 The functionality implemented by the robot is very complex and can be easily modeled as a finite state machine that reacts to events such as messages and detection of obstacles. Pseudo-code is not as suitable as an FSM for this description. Since this FSM would be extremely big, it is better to use hierarchy. First a high-level description of the idle,leader,follower,go_back_home,exit behavior is provided. Then each of these states is described itself as an FSM.
 
-#### <span class="mw-headline" id="I_am_me">I am me</span>
+#### I am me
 
 ![Overall behavior](index_files/500px-IamMe.png)
 
-#### <span class="mw-headline" id="Leader">Leader</span>
+#### Leader
 
 The main strategy used by the leader is described in the following.
 The robot first reads a file of predefined positions to reach and it follows the path (even several times) until a ball is found. Since a ball is likely to be present in each predefined position, the success is very probable. Thanks to the object detection feature, if a ball is found in an area around this path, it is detected and grabbed. Since the path is properly designed to cover most of the arena, also balls at random positions (or moved from predefined positions) can be grabbed.
 Tests show how efficient this algorithm is in several conditions. See the video section for several cases.
+
 ![Leader](index_files/500px-Leader.png)
 
-#### <span class="mw-headline" id="Follower">Follower</span>
+#### Follower
 
 The most important part of the follower algorith is the choice of the position where to go based on the action (or cancel) message received. The distance to keep from the other robot is 40 cm (center to center). In case the preceding robot moves of a distance greater than 40 cm, the robot first reaches the past position of the preceding one, than it moves towards its new position (computed thanks to the action message), but it stops 40 cm before (thanks to the margin paramenter in the go_to function). If the distance is less than 40 cm this algorithm does not work. For this reason the robot first aligns itself on the line that links its position to the new position of the preceding robot. Then it moves forward or backward in order to keep a 40 cm distance from the new position.
 After having received an action message the robot waits some time before starting to move and the motion itself takes time (especially to turn). If a cancel message is received, the robot stops, but at this time it is not necessary at 40 cm from the preceding due to the differences in the beginning of the movement. So an **additional feature** of the cancel message is exploited to resychronize: if the robot that sends the cancel implements the distance field, this piece of information is exploited to compute where it actually stopped and complete the 'follow action' using that target instead of just aborting the movement. Madara also implements this distance feature when it has to send a cancel message.
 This algorithm proved to be very efficient during tests with team Wall_EV3.
+
 ![Follower](index_files/500px-Follower.png)
 
 #### Go back home
@@ -241,12 +231,14 @@ The main strategy to go back to the starting position is just to use the go_to f
 #### Get the ball
 
 Here a flow chart is the better approach to explain functionality also described in the basic functionality section.
+
 ![get ball](index_files/500px-Get_ball.png)
+
 ![scann ball](index_files/500px-Scann_ball.png)
 
-# <span class="mw-headline" id="Videos">Videos</span>
+# Videos
 
-## <span class="mw-headline" id="Perfect_square_after_compass_calibration">Perfect square after compass calibration</span>
+## Perfect square after compass calibration
 
 The video shows how Madara performs a perfect tour around the arena after the compass calibration in four corners. It is possible to see how after the calibration Madara is able to rotate perfectly in the direction of the cardinal compass points.
 <iframe src="https://www.youtube.com/embed/XRQKZBUhkXI" allowfullscreen="" frameborder="0" height="150" width="300"></iframe>
@@ -256,7 +248,7 @@ The video shows how Madara performs a perfect tour around the arena after the co
 This video shows how the controller makes the robot perfectly turn of a given angle.
 <iframe src="https://www.youtube.com/embed/5aH2H0Zv7NE" allowfullscreen="" frameborder="0" height="150" width="300"></iframe><iframe src="https://www.youtube.com/embed/Jz68CfKGg8w" allowfullscreen="" frameborder="0" height="150" width="300"></iframe>
 
-## <span class="mw-headline" id="Leader_2">Leader</span>
+## Leader
 
 The video shows how Madara is able to reach a predefine position in the arena, search for a ball, take the ball and come back home avoiding obstacles along the path. Notice that the border of the arena is not considered as an obstacle
 <iframe src="https://www.youtube.com/embed/dcuA6EKFThM" allowfullscreen="" frameborder="0" height="300" width="600"></iframe>
@@ -275,19 +267,19 @@ This video shows a leader-follower test before the first deadline, when obstacle
 
 </div>
 
-## <span class="mw-headline" id="Follower_2">Follower</span>
+## Follower
 
 The video shows how Madara is able to follow a leader until it receives a cancel messages.
 <iframe src="https://www.youtube.com/embed/TOAfITM8c0c" allowfullscreen="" frameborder="0" height="300" width="600"></iframe>
 
-## <span class="mw-headline" id="Having_fun_with_Wall_EV3">Having fun with Wall_EV3</span>
+## Having fun with Wall_EV3
 
 This video shows some tests with another robot.
 <iframe src="https://www.youtube.com/embed/SkIcUy5U4SY" allowfullscreen="" frameborder="0" height="300" width="600"></iframe>
 
-# <span class="mw-headline" id="How_to_work_with_EV3">How to work with EV3</span>
+# How to work with EV3
 
-## <span class="mw-headline" id="Robot_Setup">Robot Setup</span>
+## Robot Setup
 
 First of all we need to install the Operating System on the EV3 robot. This operation can be performed through these steps:
 
@@ -304,7 +296,7 @@ Before we start to write code we perform some initial setup:
 2.  Create a new user without root privileges: it is needed to execute our program by typing on the roboot user interface;
 3.  Download lastest debian updates;
 
-## <span class="mw-headline" id="Source_Code">Source Code</span>
+## Source Code
 
 The source code of our project is split into multiple source files:
 
@@ -326,7 +318,7 @@ Exsternal libraries used:
 *   [ev3dev-c](https://github.com/in4lio/ev3dev-c) written by @in4lio
 *   [ev3c](https://github.com/theZiz/ev3c) written by @theZiz
 
-## <span class="mw-headline" id="Compile_and_Linking">Compile and Linking</span>
+## Compile and Linking
 
 In order to compile and link our project we use a Makefile. The Makefile creates a tree of dependencies of the main program then, only the first time, it compiles all the libraries in order to create the obj files and finally it links all the obj file in order to obtain the final executable. The Makefile is written is such a way the first time we have to compile all the libraries and then we have to compile only the library that we modify, in this way we save time. To compile the main program you simply have to run:
 
@@ -363,7 +355,7 @@ Finally, after the bluetooth server start, run the main program:
 <pre> $ ./bt_main7
 </pre>
 
-# <span class="mw-headline" id="Work_organization">Work organization</span>
+# Work organization
 
 The team has worked on this project constantly from mid November to the final competion on the 18th of January. Considering no less than 15 hours per week for 8 weeks we estimate around 120 hours of work.
 By the 14th of December (first deadline) the robot was already complete in its current architecture and able to perform all main tasks. However the compass was not yet well calibrated in several arena locations and obstacle avoid function had not been implemented. During the development of the obstacle avoid function the necessity of a custom cancel message to add to the specification arised. This feature was implemented and tested with team Wall_EV3\. Moreover random ball search was improved exploiting the obstacle detection (before the robot had to stop at random points and start a scan for ball, now scan for ball can be triggered by an obstacle detection). The color sensor to check if the ball was really grabbed was added to.
@@ -371,146 +363,28 @@ By the 14th of December (first deadline) the robot was already complete in its c
 The development procedure includes a brainstorming session after personal reflection, followed by implementation in pairs or trios. Debugging is made by the same sub-team and then by the one who did not write the code, in order to split writing and verification and improve the efficiency. The code is revised and rewritten cleanly by someone who did not write it and again it is tested by someone else. This allows to easily find and solve bugs.
 Moreover collaboration with team Wall_Ev3 allowed to test and improve the communication features between robots.
 
-# <span class="mw-headline" id="Work_division">Work division</span>
+# Work division
 
 Here follows the list of the most important parts of the main along with the person/people who has/have worked on the main writing stage.
 
-**Wrapper of basic functionalities** -> Giovanni Camurati; Marco Lucarella;
-**Sensors calibration** -> Giovanni Camurati; Enrico Gioia;
-**Bluetooth communication** -> Marco Lucarella; Simone Marchisio;
-**Leader strategy** -> Enrico Gioia;
-**Follower strategy** -> Simone Marchisio;
-**Scan for ball** -> All members
-**Grab the ball** -> All members
-**Check ball grabbed** -> Marco Lucarella; Simone Marchisio;
-**Go to position x, y** -> Giovanni Camurati; Enrico Gioia;
-**Turn absolute using compass** -> Giovanni Camurati;
-**Turn relative using gyroscope** -> Giovanni Camurati; Enrico Gioia;
-**Avoid obstacle** -> Marco Lucarella; Enrico Gioia; Simone Marchisio;
-**Compilation** -> Marco Lucarella;
-**Web site** -> All members
+* **Wrapper of basic functionalities** -> Giovanni Camurati; Marco Lucarella;
+* **Sensors calibration** -> Giovanni Camurati; Enrico Gioia;
+* **Bluetooth communication** -> Marco Lucarella; Simone Marchisio;
+* **Leader strategy** -> Enrico Gioia;
+* **Follower strategy** -> Simone Marchisio;
+* **Scan for ball** -> All members
+* **Grab the ball** -> All members
+* **Check ball grabbed** -> Marco Lucarella; Simone Marchisio;
+* **Go to position x, y** -> Giovanni Camurati; Enrico Gioia;
+* **Turn absolute using compass** -> Giovanni Camurati;
+* **Turn relative using gyroscope** -> Giovanni Camurati; Enrico Gioia;
+* **Avoid obstacle** -> Marco Lucarella; Enrico Gioia; Simone Marchisio;
+* **Compilation** -> Marco Lucarella;
+* **Web site** -> All members
 
-# <span class="mw-headline" id="Team_members">Team members</span>
+# Team members
 
-**Marco Lucarella**
-**Enrico Gioia**
-**Giovanni Camurati**
-**Simone Marchisio**
-
-</div>
-
-<div class="printfooter">Retrieved from "<a dir="ltr"></a>"</div>
-
-</div>
-
-</div>
-
-<div id="mw-navigation">
-
-## Navigation menu
-
-<div id="mw-head">
-
-<div id="left-navigation">
-
-<div id="p-namespaces" role="navigation" class="vectorTabs" aria-labelledby="p-namespaces-label">
-
-### Namespaces
-
-*   <span><a title="View the content page [Alt+Maiusc+c]" accesskey="c">Page</a></span>
-
-</div>
-
-<div id="p-variants" role="navigation" class="vectorMenu emptyPortlet" aria-labelledby="p-variants-label">
-
-### <span>Variants</span>[](#)
-
-</div>
-
-</div>
-
-<div id="right-navigation">
-
-<div id="p-views" role="navigation" class="vectorTabs" aria-labelledby="p-views-label">
-
-### Views
-
-*   <span><a>Read</a></span>
-*   <span><a title="Edit this page [Alt+Maiusc+e]" accesskey="e">Edit</a></span>
-*   <span><a title="Past revisions of this page [Alt+Maiusc+h]" accesskey="h">View history</a></span>
-*   <span><a title="Remove this page from your watchlist [Alt+Maiusc+w]" accesskey="w">Unwatch</a></span>
-
-</div>
-
-<div id="p-cactions" role="navigation" class="vectorMenu" aria-labelledby="p-cactions-label">
-
-### <span>More</span>[](#)
-
-<div class="menu">
-
-*   <a title="Delete this page [Alt+Maiusc+d]" accesskey="d">Delete</a>
-*   <a title="Move this page [Alt+Maiusc+m]" accesskey="m">Move</a>
-*   <a title="Protect this page [Alt+Maiusc+=]" accesskey="=">Protect</a>
-
-</div>
-
-</div>
-
-<div id="p-search" role="search">
-
-### <label for="searchInput">Search</label>
-
-<form action="" id="searchform">
-
-<div id="simpleSearch"><input autocomplete="off" tabindex="1" name="search" placeholder="Search" title="Search Robot Project [Alt+Maiusc+f]" accesskey="f" id="searchInput" type="search"><input value="Special:Search" name="title" type="hidden"><input name="go" value="Go" title="Go to a page with this exact name if it exists" id="searchButton" class="searchButton" type="submit"></div>
-
-</form>
-
-</div>
-
-</div>
-
-</div>
-
-<div id="mw-panel">
-
-<div id="p-logo" role="banner"><a class="mw-wiki-logo" title="Visit the main page"></a></div>
-
-<div class="portal" role="navigation" id="p-navigation" aria-labelledby="p-navigation-label">
-
-### Navigation
-
-<div class="body">
-
-*   <a title="Visit the main page [Alt+Maiusc+z]" accesskey="z">Main page</a>
-*   <a title="A list of recent changes in the wiki [Alt+Maiusc+r]" accesskey="r">Recent changes</a>
-*   <a title="Load a random page [Alt+Maiusc+x]" accesskey="x">Random page</a>
-*   <a title="The place to find out">Help</a>
-
-</div>
-
-</div>
-
-<div class="portal" role="navigation" id="p-tb" aria-labelledby="p-tb-label">
-
-### Tools
-
-<div class="body">
-
-*   <a title="A list of all wiki pages that link here [Alt+Maiusc+j]" accesskey="j">What links here</a>
-*   <a title="Recent changes in pages linked from this page [Alt+Maiusc+k]" accesskey="k">Related changes</a>
-*   <a title="Upload files [Alt+Maiusc+u]" accesskey="u">Upload file</a>
-*   <a title="A list of all special pages [Alt+Maiusc+q]" accesskey="q">Special pages</a>
-*   <a rel="alternate" title="Printable version of this page [Alt+Maiusc+p]" accesskey="p">Printable version</a>
-*   <a title="Permanent link to this revision of the page">Permanent link</a>
-*   <a title="More information about this page">Page information</a>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<script>window.RLQ = window.RLQ || []; window.RLQ.push( function () { mw.loader.state({"user":"ready","user.groups":"ready"});mw.loader.load(["mediawiki.toc","mediawiki.page.patrol.ajax","mediawiki.action.view.postEdit","site","mediawiki.user","mediawiki.hidpi","mediawiki.page.ready","mediawiki.searchSuggest","mediawiki.page.watch.ajax"]); } );</script><script>window.RLQ = window.RLQ || []; window.RLQ.push( function () { mw.config.set({"wgBackendResponseTime":1371}); } );</script>
+* **Marco Lucarella**
+* **Enrico Gioia**
+* **Giovanni Camurati**
+* **Simone Marchisio**

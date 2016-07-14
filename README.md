@@ -243,7 +243,7 @@ Here a flow chart is the better approach to explain functionality also described
 The video shows how Madara performs a perfect tour around the arena after the compass calibration in four corners. It is possible to see how after the calibration Madara is able to rotate perfectly in the direction of the cardinal compass points.
 <iframe src="https://www.youtube.com/embed/XRQKZBUhkXI" allowfullscreen="" frameborder="0" height="150" width="300"></iframe>
 
-## <span class="mw-headline" id="Perfect_360.C2.B0_turn_with_the_controller_based_on_the_gyroscope_only.">Perfect 360° turn with the controller based on the gyroscope only.</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span>[edit](http://localhost/mediawiki-1.26.0/index.php?title=Snake_Game&action=edit&section=31 "Edit section: Perfect 360° turn with the controller based on the gyroscope only.")<span class="mw-editsection-bracket">]</span></span>
+## Perfect 360° turn with the controller based on the gyroscope only.
 
 This video shows how the controller makes the robot perfectly turn of a given angle.
 <iframe src="https://www.youtube.com/embed/5aH2H0Zv7NE" allowfullscreen="" frameborder="0" height="150" width="300"></iframe><iframe src="https://www.youtube.com/embed/Jz68CfKGg8w" allowfullscreen="" frameborder="0" height="150" width="300"></iframe>
